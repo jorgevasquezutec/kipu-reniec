@@ -1,3 +1,9 @@
 .env
 *.jpg
 /node_modules
+other/
+other2/
+other3/
+other4/
+other5/
+other6/

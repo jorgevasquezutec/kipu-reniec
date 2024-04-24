@@ -1,35 +1,35 @@
 const axios = require('axios')
 const fs = require('fs')
-const dotenv = require('dotenv');
-dotenv.config();
+const config = require('./config')
+const {wait,whitePhoto} = require('./util')
 
-const { RENIEC_URL, RENIEC_TOKEN } = process.env
+const { RENIEC_URL, RENIEC_TOKEN ,DNI_PATH} = config
 
-function getPhotoByDni (dni) {
-    const url = RENIEC_URL
-    const token = RENIEC_TOKEN
-    const params = {
-        dni,
-        token
-    }
 
-    axios.get(url, {params})
-        .then(response => {
-            const data = response.data
-            const photo = data['dataJson']['foto'];
-            fs.writeFile(`${dni}.jpg`, photo, 'base64', (err) => {
-                if (err) {
-                    console.error(err)
+function getPhotoByDni(dni, path=DNI_PATH) {
+    return new Promise((resolve, reject) => {
+        const url = RENIEC_URL;
+        const token = RENIEC_TOKEN;
+        const params = { dni, token };
+
+        axios.get(url, { params })
+            .then(response => {
+                console.log(`Processing ${dni}`);
+                const data = response.data;
+                if (data['CoError'] !== '9999') {
+                    reject(new Error(`Error processing ${dni}: ${data['CoError']}`));
                 } else {
-                    console.log('Photo saved')
+                    const photo = data['dataJson']['foto'];
+                    whitePhoto(photo,`${path}/${dni}.jpg`)
+                    .then(()=>resolve())
+                    .catch(error => reject(error))
+
                 }
             })
-            
-
-        })
-        .catch(error => {
-            console.error(error)
-        })
+            .catch(error => {
+                reject(error);
+            });
+    });
 }
 
 
@@ -51,3 +51,8 @@ function main () {
 (()=> {
     main()
 })()
+
+
+module.exports= {
+    getPhotoByDni
+}
